@@ -101,14 +101,27 @@ export function SessionSelector({
         }
       } catch (error) {
         console.error("❌ [SESSION_SELECTOR] Error fetching sessions:", error);
-        const errorMessage = "Network error while fetching sessions";
+        let errorMessage = "Network error while fetching sessions";
+        let description = "Could not connect to load your sessions. Please try again.";
+        
+        // Check for specific map error
+        if (error instanceof Error && error.message.includes("map is not a function")) {
+          errorMessage = "Data format error";
+          description = "Invalid session data format from server. Please refresh the page.";
+          console.error("❌ [SESSION_SELECTOR] Map error - likely data format issue:", {
+            error,
+            errorMessage: error.message,
+          });
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
         setSessionError(errorMessage);
         setSessions([]);
 
         // Show error toast to user
-        toast.error("Network error", {
-          description:
-            "Could not connect to load your sessions. Please try again.",
+        toast.error("Failed to load sessions", {
+          description,
         });
       } finally {
         setIsLoadingSessions(false);

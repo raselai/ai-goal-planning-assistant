@@ -26,11 +26,52 @@ export async function fetchActiveSessionsAction(
   userId: string
 ): Promise<SessionListResult> {
   try {
+    console.log("🔄 [SESSION_LIST_ACTION] Fetching sessions for user:", userId);
+    
     // Fetch sessions from ADK backend (server-side)
     const result = await listUserSessions(userId);
+    
+    console.log("📋 [SESSION_LIST_ACTION] Raw result from listUserSessions:", {
+      result,
+      hasResult: !!result,
+      hasSessions: !!result?.sessions,
+      sessionsType: typeof result?.sessions,
+      sessionsIsArray: Array.isArray(result?.sessions),
+      sessionsLength: result?.sessions?.length,
+    });
+
+    // Validate that we have sessions data
+    if (!result || !result.sessions) {
+      console.warn("⚠️ [SESSION_LIST_ACTION] No sessions data in result");
+      return {
+        success: true,
+        sessions: [], // Return empty array instead of error
+      };
+    }
+
+    // Ensure sessions is an array
+    if (!Array.isArray(result.sessions)) {
+      console.error("❌ [SESSION_LIST_ACTION] Sessions is not an array:", {
+        sessionsType: typeof result.sessions,
+        sessions: result.sessions,
+      });
+      return {
+        success: false,
+        sessions: [],
+        error: "Invalid sessions data format",
+      };
+    }
+
+    // If no sessions, return empty array
+    if (result.sessions.length === 0) {
+      console.log("✅ [SESSION_LIST_ACTION] No sessions found for user");
+      return {
+        success: true,
+        sessions: [],
+      };
+    }
 
     // Fetch session details with events for each session in parallel to get real message counts
-
     const sessionDetailsPromises = result.sessions.map(async (session) => {
       try {
         const sessionWithEvents = await getSessionWithEvents(
