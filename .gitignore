@@ -193,9 +193,18 @@ test-results/
 playwright-report/
 test-results.xml
 
-# Application specific
+# Application specific - IMPORTANT: Keep these private!
 app/.env
 nextjs/.env*
+*.env
+*.env.local
+*.env.production
+*.env.development
+
+# Google Cloud credentials
+key.json
+service-account*.json
+*-credentials.json
 
 # Project specific directories
 ai_docs/
