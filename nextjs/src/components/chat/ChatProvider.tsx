@@ -317,19 +317,35 @@ export function ChatProvider({
 
       // Use provided userId or current state
       const currentUserId = requestUserId || userId;
-      if (!currentUserId) {
-        throw new Error("User ID is required to send messages");
+      if (!currentUserId?.trim()) {
+        console.error("❌ [CHAT_PROVIDER] User ID validation failed:", {
+          requestUserId,
+          userId,
+          currentUserId,
+        });
+        toast.error("Please set your User ID before sending messages");
+        return; // Don't throw error, just show toast and return
       }
 
       try {
         // Use provided session ID or current state
         const currentSessionId = requestSessionId || sessionId;
 
-        if (!currentSessionId) {
-          throw new Error(
-            "No session available. Please create a session first."
-          );
+        if (!currentSessionId?.trim()) {
+          console.error("❌ [CHAT_PROVIDER] Session ID validation failed:", {
+            requestSessionId,
+            sessionId,
+            currentSessionId,
+          });
+          toast.error("Please create a session first");
+          return; // Don't throw error, just show toast and return
         }
+
+        console.log("✅ [CHAT_PROVIDER] Submitting message:", {
+          userId: currentUserId,
+          sessionId: currentSessionId.substring(0, 8),
+          messageLength: query.length,
+        });
 
         // Add user message to chat immediately
         const userMessage: Message = {
@@ -343,9 +359,9 @@ export function ChatProvider({
         // Submit message for streaming - the backend will provide AI response
         await streamingManager.submitMessage(query);
       } catch (error) {
-        console.error("Error submitting message:", error);
-        // Don't create fake error messages - let the UI handle the error state
-        throw error;
+        console.error("❌ [CHAT_PROVIDER] Error submitting message:", error);
+        toast.error("Failed to send message. Please try again.");
+        // Don't throw error to prevent unhandled promise rejection
       }
     },
     [userId, sessionId, addMessage, streamingManager]

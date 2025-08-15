@@ -48,8 +48,19 @@ export function useStreamingManager({
   // Submit a message for streaming
   const submitMessage = useCallback(
     async (message: string): Promise<void> => {
-      if (!message.trim() || !userId || !sessionId) {
-        throw new Error("Message, userId, and sessionId are required");
+      if (!message.trim()) {
+        console.error("❌ [STREAMING_MANAGER] Empty message");
+        throw new Error("Message is required");
+      }
+
+      if (!userId?.trim()) {
+        console.error("❌ [STREAMING_MANAGER] Missing userId:", { userId });
+        throw new Error("User ID is required");
+      }
+
+      if (!sessionId?.trim()) {
+        console.error("❌ [STREAMING_MANAGER] Missing sessionId:", { sessionId });
+        throw new Error("Session ID is required");
       }
 
       const apiPayload = {
@@ -57,6 +68,12 @@ export function useStreamingManager({
         userId,
         sessionId,
       };
+
+      console.log("🚀 [STREAMING_MANAGER] Starting stream:", {
+        userId,
+        sessionId: sessionId.substring(0, 8),
+        messageLength: message.length,
+      });
 
       try {
         await startStream(
@@ -66,7 +83,7 @@ export function useStreamingManager({
           onWebsiteCountUpdate
         );
       } catch (error) {
-        console.error("Streaming error:", error);
+        console.error("❌ [STREAMING_MANAGER] Streaming error:", error);
         throw error;
       }
     },

@@ -9,12 +9,14 @@ interface InputFormProps {
   onSubmit: (query: string) => void;
   isLoading: boolean;
   context?: "homepage" | "chat"; // Add context prop for different placeholder text
+  disabled?: boolean; // Add disabled prop
 }
 
 export function InputForm({
   onSubmit,
   isLoading,
   context = "homepage",
+  disabled = false,
 }: InputFormProps): React.JSX.Element {
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -28,7 +30,7 @@ export function InputForm({
 
   const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
-    if (inputValue.trim() && !isLoading) {
+    if (inputValue.trim() && !isLoading && !disabled) {
       onSubmit(inputValue.trim());
       setInputValue("");
     }
@@ -70,14 +72,16 @@ export function InputForm({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder={placeholderText}
+              disabled={disabled}
               rows={1}
-              className="
+              className={`
                 resize-none border-0 bg-transparent text-slate-200 placeholder-slate-400
                 focus:ring-0 focus:outline-none focus:border-0 focus:shadow-none
                 min-h-[80px] max-h-48
                 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-600
                 px-0 py-3
-              "
+                ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
               style={{
                 fontSize: "16px",
                 lineHeight: "1.6",
@@ -99,7 +103,7 @@ export function InputForm({
           <Button
             type="submit"
             size="sm"
-            disabled={!inputValue.trim() || isLoading}
+            disabled={!inputValue.trim() || isLoading || disabled}
             className="
               h-9 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700
               text-white border-0 shadow-lg transition-all duration-200
