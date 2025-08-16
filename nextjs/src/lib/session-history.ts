@@ -163,38 +163,32 @@ export class AdkSessionService {
           };
         }
 
-        const sessions: AdkSession[] = rawSessions
-          .map((session: {
-            name?: string;
-            createTime?: string;
-            updateTime?: string;
-            userId?: string;
-          }) => {
-            // Extract session ID from name field: "projects/.../sessions/SESSION_ID"
-            const sessionId = session.name
-              ? session.name.split("/sessions/")[1]
-              : null;
+        const sessions: AdkSession[] = [];
+        
+        for (const session of rawSessions) {
+          // Extract session ID from name field: "projects/.../sessions/SESSION_ID"
+          const sessionId = session.name
+            ? session.name.split("/sessions/")[1]
+            : null;
 
-            // Skip sessions without valid ID or userId
-            if (!sessionId || !session.userId) {
-              console.warn("⚠️ [ADK SESSION SERVICE] Skipping invalid session:", {
-                sessionId,
-                userId: session.userId,
-                name: session.name,
-              });
-              return null;
-            }
+          // Skip sessions without valid ID or userId
+          if (!sessionId || !session.userId) {
+            console.warn("⚠️ [ADK SESSION SERVICE] Skipping invalid session:", {
+              sessionId,
+              userId: session.userId,
+              name: session.name,
+            });
+            continue;
+          }
 
-            return {
-              id: sessionId,
-              app_name: getAdkAppName(),
-              user_id: session.userId,
-              state: null,
-              last_update_time: session.updateTime || session.createTime || null,
-              // Keep original fields for reference (these are not part of AdkSession interface)
-            };
-          })
-          .filter((session): session is AdkSession => session !== null);
+          sessions.push({
+            id: sessionId,
+            app_name: getAdkAppName(),
+            user_id: session.userId,
+            state: null,
+            last_update_time: session.updateTime || session.createTime || null,
+          });
+        }
 
         return {
           sessions: Array.isArray(sessions) ? sessions : [],
@@ -260,17 +254,23 @@ export class AdkSessionService {
         
         if (Array.isArray(responseData)) {
           // Response is directly an array of sessions
-          sessions = responseData.filter((session): session is AdkSession => 
-            session && 
-            typeof session.id === 'string' && 
-            typeof session.user_id === 'string'
+          sessions = responseData.filter((session: unknown): session is AdkSession => 
+            typeof session === 'object' &&
+            session !== null &&
+            'id' in session &&
+            'user_id' in session &&
+            typeof (session as { id: unknown }).id === 'string' && 
+            typeof (session as { user_id: unknown }).user_id === 'string'
           );
         } else if (responseData && Array.isArray(responseData.sessions)) {
           // Response is an object with sessions array
-          sessions = responseData.sessions.filter((session): session is AdkSession => 
-            session && 
-            typeof session.id === 'string' && 
-            typeof session.user_id === 'string'
+          sessions = responseData.sessions.filter((session: unknown): session is AdkSession => 
+            typeof session === 'object' &&
+            session !== null &&
+            'id' in session &&
+            'user_id' in session &&
+            typeof (session as { id: unknown }).id === 'string' && 
+            typeof (session as { user_id: unknown }).user_id === 'string'
           );
         } else if (responseData && typeof responseData === 'object') {
           // Response is an object, try to extract sessions
