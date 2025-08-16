@@ -163,8 +163,8 @@ export class AdkSessionService {
           };
         }
 
-        const sessions: AdkSession[] = rawSessions.map(
-          (session: {
+        const sessions: AdkSession[] = rawSessions
+          .map((session: {
             name?: string;
             createTime?: string;
             updateTime?: string;
@@ -175,19 +175,26 @@ export class AdkSessionService {
               ? session.name.split("/sessions/")[1]
               : null;
 
+            // Skip sessions without valid ID or userId
+            if (!sessionId || !session.userId) {
+              console.warn("⚠️ [ADK SESSION SERVICE] Skipping invalid session:", {
+                sessionId,
+                userId: session.userId,
+                name: session.name,
+              });
+              return null;
+            }
+
             return {
               id: sessionId,
-              app_name: getAdkAppName(), // Add app_name for compatibility
+              app_name: getAdkAppName(),
               user_id: session.userId,
               state: null,
-              last_update_time: session.updateTime || session.createTime,
-              // Keep original fields for reference
-              name: session.name,
-              createTime: session.createTime,
-              updateTime: session.updateTime,
+              last_update_time: session.updateTime || session.createTime || null,
+              // Keep original fields for reference (these are not part of AdkSession interface)
             };
-          }
-        );
+          })
+          .filter((session): session is AdkSession => session !== null);
 
         return {
           sessions: Array.isArray(sessions) ? sessions : [],
@@ -253,10 +260,18 @@ export class AdkSessionService {
         
         if (Array.isArray(responseData)) {
           // Response is directly an array of sessions
-          sessions = responseData;
+          sessions = responseData.filter((session): session is AdkSession => 
+            session && 
+            typeof session.id === 'string' && 
+            typeof session.user_id === 'string'
+          );
         } else if (responseData && Array.isArray(responseData.sessions)) {
           // Response is an object with sessions array
-          sessions = responseData.sessions;
+          sessions = responseData.sessions.filter((session): session is AdkSession => 
+            session && 
+            typeof session.id === 'string' && 
+            typeof session.user_id === 'string'
+          );
         } else if (responseData && typeof responseData === 'object') {
           // Response is an object, try to extract sessions
           console.warn("⚠️ [ADK SESSION SERVICE] Unexpected response format, trying to extract sessions");
