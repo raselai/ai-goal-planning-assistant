@@ -140,6 +140,29 @@ export class AdkSessionService {
 
         // Agent Engine sessions API returns sessions with 'name' field, need to extract ID
         const rawSessions = responseData.sessions || responseData || [];
+        
+        console.log("🔍 [ADK SESSION SERVICE] Processing Agent Engine response:", {
+          responseData,
+          hasResponseData: !!responseData,
+          hasSessions: !!responseData.sessions,
+          rawSessions,
+          rawSessionsType: typeof rawSessions,
+          rawSessionsIsArray: Array.isArray(rawSessions),
+          rawSessionsLength: rawSessions?.length,
+        });
+
+        // Ensure rawSessions is an array
+        if (!Array.isArray(rawSessions)) {
+          console.error("❌ [ADK SESSION SERVICE] rawSessions is not an array:", {
+            rawSessionsType: typeof rawSessions,
+            rawSessions,
+          });
+          return {
+            sessions: [],
+            sessionIds: [],
+          };
+        }
+
         const sessions: AdkSession[] = rawSessions.map(
           (session: {
             name?: string;
@@ -214,7 +237,34 @@ export class AdkSessionService {
           throw new Error(`Failed to list sessions: ${response.statusText}`);
         }
 
-        const sessions: AdkSession[] = await response.json();
+        const responseData = await response.json();
+        
+        console.log("🔍 [ADK SESSION SERVICE] Local Backend raw response:", {
+          responseData,
+          responseType: typeof responseData,
+          isArray: Array.isArray(responseData),
+          hasSessions: !!responseData?.sessions,
+          sessionsType: typeof responseData?.sessions,
+          sessionsIsArray: Array.isArray(responseData?.sessions),
+        });
+
+        // Handle different response formats
+        let sessions: AdkSession[] = [];
+        
+        if (Array.isArray(responseData)) {
+          // Response is directly an array of sessions
+          sessions = responseData;
+        } else if (responseData && Array.isArray(responseData.sessions)) {
+          // Response is an object with sessions array
+          sessions = responseData.sessions;
+        } else if (responseData && typeof responseData === 'object') {
+          // Response is an object, try to extract sessions
+          console.warn("⚠️ [ADK SESSION SERVICE] Unexpected response format, trying to extract sessions");
+          sessions = [];
+        } else {
+          console.error("❌ [ADK SESSION SERVICE] Invalid response format:", responseData);
+          sessions = [];
+        }
 
         console.log("✅ [ADK SESSION SERVICE] Local Backend success:", {
           sessionsCount: sessions.length,

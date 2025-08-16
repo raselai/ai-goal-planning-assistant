@@ -62,8 +62,26 @@ export function SessionSelector({
 
         if (result.success) {
           console.log("✅ [SESSION_SELECTOR] Active sessions fetched:", {
-            sessionsCount: result.sessions.length,
+            result,
+            hasResult: !!result,
+            hasSessions: !!result.sessions,
+            sessionsIsArray: Array.isArray(result.sessions),
+            sessionsCount: result.sessions?.length || 0,
           });
+
+          // Validate that sessions is an array before mapping
+          if (!result.sessions || !Array.isArray(result.sessions)) {
+            console.error("❌ [SESSION_SELECTOR] Sessions is not an array:", {
+              sessionsType: typeof result.sessions,
+              sessions: result.sessions,
+            });
+            setSessionError("Invalid sessions data format");
+            setSessions([]);
+            toast.error("Failed to load sessions", {
+              description: "Invalid data format received from server",
+            });
+            return;
+          }
 
           // Convert ADK sessions to Session format
           const activeSessions: Session[] = result.sessions.map((session) => ({
